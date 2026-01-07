@@ -13,8 +13,9 @@ export const getAllUsers = asyncHandler(async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    const total = await User.countDocuments({});
-    const users = await User.find({})
+    const query = { isAdmin: { $ne: true } };
+    const total = await User.countDocuments(query);
+    const users = await User.find(query)
         .select('-password')
         .sort({ createdAt: -1 })
         .skip(skip)

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './components/Login';
 import Register from './components/Register';
@@ -13,6 +13,7 @@ import FIRHistory from './pages/FIRHistory';
 import DocumentAnalysis from './pages/DocumentAnalysis';
 import SavedQueries from './pages/SavedQueries';
 import AdminPanel from './pages/AdminPanel';
+import Landing from './pages/Landing';
 import { DocDrafter, History } from './pages/OtherPages';
 
 function App() {
@@ -55,13 +56,14 @@ function App() {
     <BrowserRouter>
       <Routes>
         {/* Public Routes */}
+        <Route path="/" element={<Landing />} />
         <Route 
           path="/login" 
-          element={!user ? <Login onLogin={handleLogin} onSwitchToRegister={() => {}} /> : <Navigate to="/" />} 
+          element={!user ? <Login onLogin={handleLogin} onSwitchToRegister={() => {}} /> : <Navigate to="/dashboard" />} 
         />
         <Route 
           path="/register" 
-          element={!user ? <Register onLogin={handleLogin} onSwitchToLogin={() => {}} /> : <Navigate to="/" />} 
+          element={!user ? <Register onLogin={handleLogin} onSwitchToLogin={() => {}} /> : <Navigate to="/dashboard" />} 
         />
         <Route 
           path="/forgot-password" 
@@ -70,23 +72,23 @@ function App() {
 
         {/* Protected Routes */}
         <Route element={user ? <MainLayout user={user} onLogout={handleLogout} theme={theme} setTheme={setTheme} /> : <Navigate to="/login" />}>
-          <Route path="/" element={<Dashboard />} />
+          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/chat" element={<ChatAssistant />} />
           <Route path="/analysis" element={<DocumentAnalysis />} />
           <Route 
             path="/generator" 
-            element={user?.role?.toLowerCase() !== 'public' ? <DocumentGenerator /> : <Navigate to="/" />} 
+            element={user?.role?.toLowerCase() !== 'public' ? <DocumentGenerator /> : <Navigate to="/dashboard" />} 
           />
           <Route 
             path="/fir-history" 
-            element={user?.role?.toLowerCase() !== 'public' ? <FIRHistory /> : <Navigate to="/" />} 
+            element={user?.role?.toLowerCase() !== 'public' ? <FIRHistory /> : <Navigate to="/dashboard" />} 
           />
           <Route path="/saved-queries" element={<SavedQueries />} />
           <Route path="/drafter" element={<DocDrafter />} />
           <Route path="/history" element={<History />} />
           <Route 
             path="/admin" 
-            element={user?.isAdmin ? <AdminPanel /> : <Navigate to="/" />} 
+            element={user?.isAdmin ? <AdminPanel /> : <Navigate to="/dashboard" />} 
           />
           <Route path="/profile" element={<Profile />} />
           <Route path="/settings" element={<Settings />} />
@@ -99,5 +101,4 @@ function App() {
   );
 }
 
-export default App
-
+export default App;

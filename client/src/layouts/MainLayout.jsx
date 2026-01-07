@@ -18,7 +18,7 @@ const MainLayout = ({ user, onLogout, theme, setTheme }) => {
     }
 
     const navItems = [
-        { path: '/', name: 'Dashboard', icon: <FaHome />, roles: ['admin', 'police', 'public'] },
+        { path: '/dashboard', name: 'Dashboard', icon: <FaHome />, roles: ['admin', 'police', 'public'] },
         { path: '/chat', name: 'Chat Assistant', icon: <FaRobot />, roles: ['admin', 'police', 'public'] },
         { path: '/analysis', name: 'Document Analysis', icon: <FaSearch />, roles: ['admin', 'police', 'public'] },
         { path: '/generator', name: 'Document Generator', icon: <FaFileAlt />, roles: ['admin', 'police'] },
@@ -34,7 +34,7 @@ const MainLayout = ({ user, onLogout, theme, setTheme }) => {
     const SidebarContent = ({ isCompact, onToggle }) => (
         <div className="d-flex flex-column h-100">
             <div className={`p-3 mb-2 d-flex align-items-center ${isCompact ? 'justify-content-center' : 'justify-content-between'}`}>
-                {!isCompact && <span className="fs-4 fw-bold text-primary text-truncate">Legal Mate</span>}
+                {!isCompact && <span className="fs-4 fw-bold text-primary text-truncate">Law Mate</span>}
                 {isCompact && <span className="fs-4 fw-bold text-primary">LM</span>}
                 
                 {onToggle && (
@@ -83,7 +83,7 @@ const MainLayout = ({ user, onLogout, theme, setTheme }) => {
             {/* Mobile Sidebar (Offcanvas) */}
             <Offcanvas show={showSidebar} onHide={handleClose}>
                 <Offcanvas.Header closeButton>
-                    <Offcanvas.Title className="fw-bold text-primary">Legal Mate</Offcanvas.Title>
+                    <Offcanvas.Title className="fw-bold text-primary">Law Mate</Offcanvas.Title>
                 </Offcanvas.Header>
                 <Offcanvas.Body className="p-0">
                     <SidebarContent isCompact={false} />

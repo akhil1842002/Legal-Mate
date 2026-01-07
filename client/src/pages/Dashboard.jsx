@@ -57,7 +57,7 @@ const Dashboard = () => {
                 });
                 const data = await response.json();
                 if (response.ok) {
-                    setSavedQueries(data);
+                    setSavedQueries(data.queries || []);
                 }
             } catch (err) {
                 console.error('Queries fetch error:', err);
@@ -264,8 +264,10 @@ const Dashboard = () => {
                                             <ListGroup.Item 
                                                 key={q._id} 
                                                 action 
+                                                as="div"
                                                 className="py-3 px-4 bg-transparent d-flex justify-content-between align-items-center border-0 border-bottom"
                                                 onClick={() => handleRunQuery(q.query, q.law)}
+                                                style={{ cursor: 'pointer' }}
                                             >
                                                 <div className="d-flex align-items-center">
                                                     <div className="p-2 rounded bg-body-secondary text-primary me-3">

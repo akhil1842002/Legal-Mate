@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Form, Button, Card, Alert, Container, Row, Col } from 'react-bootstrap';
-import { Link } from 'react-router-dom';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { FaArrowLeft } from 'react-icons/fa';
 import LegalHeroImage from './LegalHeroImage';
 import API_URL from '../config';
 
@@ -47,14 +47,24 @@ const Register = ({ onLogin }) => {
                  {/* Left Side: SVG / branding */}
                  <Col md={6} lg={5} className="d-none d-md-flex flex-column align-items-center justify-content-center p-5">
                     <LegalHeroImage />
-                    <h2 className="mt-4 fw-bold text-success">Join Legal Mate</h2>
+                    <h2 className="mt-4 fw-bold text-success">Join Law Mate</h2>
                     <p className="text-muted text-center lead">Get instant access to comprehensive Indian legal resources.</p>
                 </Col>
 
                 {/* Right Side: Register Form */}
                 <Col md={6} lg={5}>
                     <Card className="shadow-lg border-0 rounded-4">
-                        <Card.Body className="p-5">
+                        <Card.Body className="p-5 position-relative">
+                            <div className="position-absolute top-0 start-0 p-4">
+                                <Button 
+                                    variant="link" 
+                                    className="text-decoration-none text-muted p-0 d-flex align-items-center gap-2"
+                                    onClick={() => navigate('/')}
+                                >
+                                    <FaArrowLeft size={12} /> <span className="small fw-bold text-success">HOME</span>
+                                </Button>
+                            </div>
+
                             <div className="mb-4 text-center">
                                 <h3 className="fw-bold">Create Account</h3>
                                 <p className="text-muted">Start your journey today</p>

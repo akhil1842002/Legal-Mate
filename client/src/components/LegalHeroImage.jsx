@@ -20,7 +20,7 @@ const LegalHeroImage = () => (
             <path fill="#8f94fb" d="M380 300 Q430 360 480 300 Z" opacity="0.8"/>
         </g>
         <text x="50%" y="90%" dominantBaseline="middle" textAnchor="middle" fill="#4e54c8" fontSize="35" fontWeight="bold" fontFamily="sans-serif">
-            Legal Mate
+            Law Mate
         </text>
     </svg>
 );

@@ -47,13 +47,25 @@ const registerUser = asyncHandler(async (req, res) => {
 // @route   POST /api/auth/login
 // @access  Public
 const authUser = asyncHandler(async (req, res) => {
-    const { email, password } = req.body;
+    const { email, password, role } = req.body;
 
     const user = await User.findOne({ email });
 
     if (!user) {
         res.status(401);
         throw new Error('User not found');
+    }
+
+    // Role validation: selected role must match user's role/status in database
+    if (role === 'admin') {
+        if (!user.isAdmin) {
+            res.status(401);
+            throw new Error('Unauthorized: This account does not have Administrator privileges');
+        }
+    } else if (user.role !== role && !user.isAdmin) {
+        // If not admin and roles don't match, block access
+        res.status(401);
+        throw new Error(`Unauthorized: This account is not registered as ${role}`);
     }
 
     if (await user.matchPassword(password)) {

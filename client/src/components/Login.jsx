@@ -1,16 +1,19 @@
 import { useState } from 'react';
 import { Form, Button, Card, Alert, Container, Row, Col } from 'react-bootstrap';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { FaArrowLeft } from 'react-icons/fa';
 import LegalHeroImage from './LegalHeroImage';
 import API_URL from '../config';
 
 const Login = ({ onLogin }) => {
+    const [role, setRole] = useState('public');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [rememberMe, setRememberMe] = useState(false);
     const [error, setError] = useState(null);
 
     const [loading, setLoading] = useState(false);
+    const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -21,7 +24,7 @@ const Login = ({ onLogin }) => {
             const response = await fetch(`${API_URL}/api/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password, rememberMe }),
+                body: JSON.stringify({ email, password, role, rememberMe }),
             });
 
             const data = await response.json();
@@ -52,7 +55,17 @@ const Login = ({ onLogin }) => {
                 {/* Right Side: Login Form */}
                 <Col md={6} lg={5}>
                     <Card className="shadow-lg border-0 rounded-4">
-                        <Card.Body className="p-5">
+                        <Card.Body className="p-5 position-relative">
+                            <div className="position-absolute top-0 start-0 p-4">
+                                <Button 
+                                    variant="link" 
+                                    className="text-decoration-none text-muted p-0 d-flex align-items-center gap-2"
+                                    onClick={() => navigate('/')}
+                                >
+                                    <FaArrowLeft size={12} /> <span className="small fw-bold">HOME</span>
+                                </Button>
+                            </div>
+
                             <div className="mb-4 text-center">
                                 <h3 className="fw-bold">Welcome Back</h3>
                                 <p className="text-muted">Please login to continue</p>
@@ -60,6 +73,18 @@ const Login = ({ onLogin }) => {
                             
                             {error && <Alert variant="danger">{error}</Alert>}
                             <Form onSubmit={handleSubmit}>
+                                <Form.Group className="mb-3">
+                                    <Form.Label>Login As</Form.Label>
+                                    <Form.Select 
+                                        value={role} 
+                                        onChange={(e) => setRole(e.target.value)}
+                                        className="py-2"
+                                    >
+                                        <option value="public">Public User</option>
+                                        <option value="police">Police Officer</option>
+                                        <option value="admin">Administrator</option>
+                                    </Form.Select>
+                                </Form.Group>
                                 <Form.Group className="mb-3">
                                     <Form.Label>Email Address</Form.Label>
                                     <Form.Control
@@ -103,14 +128,8 @@ const Login = ({ onLogin }) => {
                                 </Button>
                             </Form>
                             <div className="text-center mt-3">
-                                <span className="text-muted">New to Legal Mate? </span>
+                                <span className="text-muted">New to Law Mate? </span>
                                 <Link to="/register" className="text-decoration-none fw-bold">Create Account</Link>
-                            </div>
-                        
-                            <div className="text-center mt-4">
-                                <Button variant="outline-secondary" size="sm" onClick={() => onLogin({ name: 'Test User', email: 'test@example.com', role: 'police', _id: 'dev123' })}>
-                                    ⚡ Dev Mode: Quick Access
-                                </Button>
                             </div>
                         </Card.Body>
                     </Card>

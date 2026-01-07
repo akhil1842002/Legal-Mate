@@ -11,7 +11,7 @@ export const getDashboardStats = asyncHandler(async (req, res) => {
     const isAdmin = req.user.isAdmin;
     const userId = req.user._id;
     const role = req.user.role?.toLowerCase() || 'public';
-    const isPowerUser = isAdmin || role === 'police';
+    const isPowerUser = isAdmin; // Only Admin sees global platform stats
 
     let totalSearches, documentsDrafted, totalFiledDocs, totalAnalyzed, savedQueries, recentActivity, recentQueries;
 

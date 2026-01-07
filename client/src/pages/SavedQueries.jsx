@@ -195,8 +195,10 @@ const SavedQueries = () => {
                                 <ListGroup.Item 
                                     key={q._id} 
                                     action 
+                                    as="div"
                                     className="py-3 px-4 bg-transparent d-flex justify-content-between align-items-center"
                                     onClick={() => handleRun(q.query, q.law)}
+                                    style={{ cursor: 'pointer' }}
                                 >
                                     <div className="d-flex align-items-center">
                                         <div className="p-3 rounded bg-body-secondary text-primary me-3">
