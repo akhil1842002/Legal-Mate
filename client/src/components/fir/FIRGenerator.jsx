@@ -93,9 +93,12 @@ const FIRGenerator = () => {
         }
     }, [editId]);
 
+    const getStoredUser = () => JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user'));
+
     const loadFIRForEdit = async (id) => {
         try {
-            const user = JSON.parse(localStorage.getItem('user'));
+            const user = getStoredUser();
+            if (!user?.token) return;
             const token = user.token;
 
             const response = await fetch(`${API_URL}/api/fir/${id}`, {
@@ -138,7 +141,8 @@ const FIRGenerator = () => {
 
     const saveDraft = async () => {
         try {
-            const user = JSON.parse(localStorage.getItem('user'));
+            const user = getStoredUser();
+            if (!user?.token) return;
             const token = user.token;
 
             const url = savedDraftId 
@@ -235,7 +239,8 @@ const FIRGenerator = () => {
         }
 
         try {
-            const user = JSON.parse(localStorage.getItem('user'));
+            const user = getStoredUser();
+            if (!user?.name) return;
             
             // Set officer name from logged-in user
             const updatedFirData = {
@@ -261,7 +266,8 @@ const FIRGenerator = () => {
 
     const handleDownloadPDF = async () => {
         try {
-            const user = JSON.parse(localStorage.getItem('user'));
+            const user = getStoredUser();
+            if (!user?.token) return;
             const token = user.token;
 
             // Set officer name from logged-in user

@@ -42,7 +42,7 @@ const Register = ({ onLogin }) => {
     };
 
     return (
-        <Container fluid className="vh-100 d-flex align-items-center bg-light">
+        <Container fluid className="vh-100 d-flex align-items-center bg-body-tertiary">
             <Row className="w-100 justify-content-center align-items-center g-0">
                  {/* Left Side: SVG / branding */}
                  <Col md={6} lg={5} className="d-none d-md-flex flex-column align-items-center justify-content-center p-5">

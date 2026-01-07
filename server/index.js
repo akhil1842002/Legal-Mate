@@ -9,6 +9,7 @@ import statsRouter from './routes/statsRoutes.js';
 import analysisRouter from './routes/analysisRoutes.js';
 import EmbeddingService from './services/embeddingService.js';
 import queryRouter from './routes/queryRoutes.js';
+import adminRouter from './routes/adminRoutes.js';
 import connectDB from './config/db.js';
 import { errorHandler } from './middleware/errorMiddleware.js';
 import { protect } from './middleware/authMiddleware.js';
@@ -43,6 +44,7 @@ app.use('/api/fir', firRouter);
 app.use('/api/stats', statsRouter);
 app.use('/api/analysis', analysisRouter);
 app.use('/api/queries', queryRouter);
+app.use('/api/admin', adminRouter);
 
 // Error Handling Middleware
 app.use(errorHandler);

@@ -4,7 +4,8 @@ import { FaUserCircle, FaEnvelope, FaIdBadge, FaShieldAlt } from 'react-icons/fa
 import API_URL from '../config';
 
 const Profile = () => {
-    const [user, setUser] = useState(JSON.parse(localStorage.getItem('user') || '{}'));
+    const getStoredUser = () => JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user') || '{}');
+    const [user, setUser] = useState(getStoredUser());
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState({
         name: user.name || '',
@@ -26,7 +27,13 @@ const Profile = () => {
         setLoading(true);
 
         try {
-            const token = user.token; // Assuming token is stored in user object
+            const currentUser = getStoredUser();
+            const token = currentUser.token;
+            if (!token) {
+                setError('Authentication session expired. Please login again.');
+                return;
+            }
+
             const response = await fetch(`${API_URL}/api/users/profile`, {
                 method: 'PUT',
                 headers: { 
@@ -42,7 +49,11 @@ const Profile = () => {
                 setMessage('Profile updated successfully');
                 setIsEditing(false);
                 setUser(data);
-                localStorage.setItem('user', JSON.stringify(data));
+                if (localStorage.getItem('user')) {
+                    localStorage.setItem('user', JSON.stringify(data));
+                } else {
+                    sessionStorage.setItem('user', JSON.stringify(data));
+                }
             } else {
                 setError(data.message || 'Update failed');
             }

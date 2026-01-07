@@ -20,6 +20,10 @@ const userSchema = mongoose.Schema({
         enum: ['public', 'police'],
         default: 'public'
     },
+    isAdmin: {
+        type: Boolean,
+        default: false
+    },
     documents: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Document'

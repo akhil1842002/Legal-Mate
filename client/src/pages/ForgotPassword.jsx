@@ -49,7 +49,7 @@ const ForgotPassword = () => {
     };
 
     return (
-        <Container fluid className="vh-100 d-flex align-items-center bg-light text-dark">
+        <Container fluid className="vh-100 d-flex align-items-center bg-body-tertiary">
             <Row className="w-100 justify-content-center align-items-center g-0">
                 <Col md={6} lg={5} className="d-none d-md-flex flex-column align-items-center justify-content-center p-5">
                     <LegalHeroImage />

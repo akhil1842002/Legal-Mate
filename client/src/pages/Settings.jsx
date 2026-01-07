@@ -38,8 +38,13 @@ const Settings = () => {
 
         setPasswordLoading(true);
         try {
-            const user = JSON.parse(localStorage.getItem('user'));
-            const token = user.token;
+            const user = JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user'));
+            
+            if (!user || !user.token) { // Check if user or token is missing
+                setPasswordError('Session expired. Please login again.');
+                return;
+            }
+            const token = user.token; // Define token after checking user
 
             const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
             const response = await fetch(`${API_URL}/api/users/password-change`, {

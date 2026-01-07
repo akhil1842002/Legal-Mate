@@ -18,7 +18,8 @@ const LoadDraftModal = ({ show, onHide, onLoadDraft }) => {
         setLoading(true);
         setError(null);
         try {
-            const user = JSON.parse(localStorage.getItem('user'));
+            const user = JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user'));
+            if (!user?.token) return;
             const token = user.token;
 
             const response = await fetch(`${API_URL}/api/fir/drafts`, {
@@ -46,7 +47,8 @@ const LoadDraftModal = ({ show, onHide, onLoadDraft }) => {
         if (!window.confirm('Delete this draft?')) return;
 
         try {
-            const user = JSON.parse(localStorage.getItem('user'));
+            const user = JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user'));
+            if (!user?.token) return;
             const token = user.token;
 
             const response = await fetch(`${API_URL}/api/fir/${id}`, {

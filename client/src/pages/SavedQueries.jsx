@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Container, Card, ListGroup, Button, Badge, Spinner, Alert, Modal } from 'react-bootstrap';
+import { Container, Card, ListGroup, Button, Badge, Spinner, Alert, Modal, Form } from 'react-bootstrap';
 import { FaHistory, FaTrash, FaSearch } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import API_URL from '../config';
@@ -10,25 +10,36 @@ const SavedQueries = () => {
     const [error, setError] = useState(null);
     const [showConfirm, setShowConfirm] = useState(false);
     const [deleteId, setDeleteId] = useState(null);
+    
+    // Pagination state
+    const [page, setPage] = useState(1);
+    const [limit, setLimit] = useState(10);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalCount, setTotalCount] = useState(0);
+
     const navigate = useNavigate();
 
     useEffect(() => {
         fetchQueries();
-    }, []);
+    }, [page, limit]);
 
     const fetchQueries = async () => {
         setLoading(true);
         setError(null);
         try {
-            const user = JSON.parse(localStorage.getItem('user'));
-            const response = await fetch(`${API_URL}/api/queries`, {
+            const user = JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user'));
+            if (!user?.token) return;
+
+            const response = await fetch(`${API_URL}/api/queries?page=${page}&limit=${limit}`, {
                 headers: {
                     'Authorization': `Bearer ${user.token}`
                 }
             });
             const data = await response.json();
             if (response.ok) {
-                setQueries(data);
+                setQueries(data.queries);
+                setTotalPages(data.pages);
+                setTotalCount(data.total);
             } else {
                 setError(data.message || 'Failed to fetch saved searches');
             }
@@ -40,6 +51,79 @@ const SavedQueries = () => {
         }
     };
 
+    const PaginationControls = ({ currentPage, totalPages, totalItems, onPageChange, limit, onLimitChange }) => {
+        if (totalItems === 0) return null;
+
+        return (
+            <div className="d-flex flex-column flex-md-row justify-content-between align-items-center mt-4 gap-3 bg-body-tertiary p-3 rounded-4">
+                <div className="text-muted small">
+                    Showing <strong>{(currentPage - 1) * limit + 1}</strong> to <strong>{Math.min(currentPage * limit, totalItems)}</strong> of <strong>{totalItems}</strong> searches
+                </div>
+                
+                <div className="d-flex align-items-center gap-3">
+                    <div className="d-flex align-items-center gap-2">
+                        <span className="small text-muted">Rows:</span>
+                        <Form.Select 
+                            size="sm" 
+                            className="w-auto border-0 bg-light rounded-pill px-3"
+                            value={limit}
+                            onChange={(e) => {
+                                onLimitChange(Number(e.target.value));
+                                onPageChange(1);
+                            }}
+                        >
+                            {[5, 10, 25, 50].map(l => <option key={l} value={l}>{l}</option>)}
+                        </Form.Select>
+                    </div>
+
+                    <div className="d-flex gap-1">
+                        <Button 
+                            variant="light" 
+                            size="sm" 
+                            disabled={currentPage === 1}
+                            onClick={() => onPageChange(currentPage - 1)}
+                            className="rounded-circle"
+                        >
+                            &laquo;
+                        </Button>
+                        
+                        {[...Array(totalPages)].map((_, i) => {
+                            const p = i + 1;
+                            if (totalPages > 5) {
+                                if (p !== 1 && p !== totalPages && Math.abs(p - currentPage) > 1) {
+                                    if (p === 2 || p === totalPages - 1) return <span key={p} className="mx-1 text-muted">...</span>;
+                                    return null;
+                                }
+                            }
+
+                            return (
+                                <Button 
+                                    key={p}
+                                    variant={currentPage === p ? 'primary' : 'light'} 
+                                    size="sm"
+                                    onClick={() => onPageChange(p)}
+                                    className="rounded-pill px-3"
+                                >
+                                    {p}
+                                </Button>
+                            );
+                        })}
+
+                        <Button 
+                            variant="light" 
+                            size="sm" 
+                            disabled={currentPage === totalPages || totalPages === 0}
+                            onClick={() => onPageChange(currentPage + 1)}
+                            className="rounded-circle"
+                        >
+                            &raquo;
+                        </Button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     const handleDelete = async (id, e) => {
         e.stopPropagation();
         setDeleteId(id);
@@ -48,7 +132,9 @@ const SavedQueries = () => {
 
     const confirmDelete = async () => {
         try {
-            const user = JSON.parse(localStorage.getItem('user'));
+            const user = JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user'));
+            if (!user?.token) return;
+
             const response = await fetch(`${API_URL}/api/queries/${deleteId}`, {
                 method: 'DELETE',
                 headers: {
@@ -141,6 +227,17 @@ const SavedQueries = () => {
                     )}
                 </Card.Body>
             </Card>
+
+            {!loading && queries.length > 0 && (
+                <PaginationControls 
+                    currentPage={page}
+                    totalPages={totalPages}
+                    totalItems={totalCount}
+                    limit={limit}
+                    onPageChange={setPage}
+                    onLimitChange={setLimit}
+                />
+            )}
 
             {/* Delete Confirmation Modal */}
             <Modal show={showConfirm} onHide={() => setShowConfirm(false)} centered size="sm">

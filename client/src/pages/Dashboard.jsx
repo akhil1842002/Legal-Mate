@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Spinner, Alert, ListGroup, Badge, Button, Modal } from 'react-bootstrap';
-import { FaRobot, FaFileContract, FaSearch, FaHistory, FaCheckCircle, FaEdit, FaBalanceScale, FaTrash } from 'react-icons/fa';
+import { FaRobot, FaFileContract, FaSearch, FaHistory, FaCheckCircle, FaEdit, FaBalanceScale, FaTrash, FaUsers, FaPen } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import API_URL from '../config';
 
@@ -12,16 +12,23 @@ const Dashboard = () => {
     const [queriesLoading, setQueriesLoading] = useState(true);
     const [showConfirm, setShowConfirm] = useState(false);
     const [deleteId, setDeleteId] = useState(null);
-    const userRole = JSON.parse(localStorage.getItem('user'))?.role?.toLowerCase() || 'public';
+    
+    // Helper to get user from either storage (consistent with App.jsx)
+    const getStoredUser = () => JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user'));
+    const user = getStoredUser();
+    const userRole = user?.role?.toLowerCase() || 'public';
+    
     const navigate = useNavigate();
 
     useEffect(() => {
         const fetchStats = async () => {
+            const currentUser = getStoredUser();
+            if (!currentUser?.token) return;
+
             try {
-                const user = JSON.parse(localStorage.getItem('user'));
                 const response = await fetch(`${API_URL}/api/stats/dashboard`, {
                     headers: {
-                        'Authorization': `Bearer ${user.token}`
+                        'Authorization': `Bearer ${currentUser.token}`
                     }
                 });
                 const data = await response.json();
@@ -39,11 +46,13 @@ const Dashboard = () => {
         };
 
         const fetchQueries = async () => {
+            const currentUser = getStoredUser();
+            if (!currentUser?.token) return;
+
             try {
-                const user = JSON.parse(localStorage.getItem('user'));
                 const response = await fetch(`${API_URL}/api/queries`, {
                     headers: {
-                        'Authorization': `Bearer ${user.token}`
+                        'Authorization': `Bearer ${currentUser.token}`
                     }
                 });
                 const data = await response.json();
@@ -69,11 +78,13 @@ const Dashboard = () => {
 
     const confirmDelete = async () => {
         try {
-            const user = JSON.parse(localStorage.getItem('user'));
+            const currentUser = getStoredUser();
+            if (!currentUser?.token) return;
+            
             const response = await fetch(`${API_URL}/api/queries/${deleteId}`, {
                 method: 'DELETE',
                 headers: {
-                    'Authorization': `Bearer ${user.token}`
+                    'Authorization': `Bearer ${currentUser.token}`
                 }
             });
 
@@ -116,77 +127,130 @@ const Dashboard = () => {
     }
 
     const statCards = [
-        { title: 'Total Searches', count: stats.totalSearches, icon: <FaSearch />, color: 'primary', roles: ['admin', 'police', 'public'] },
-        { title: 'Documents Drafted', count: stats.documentsDrafted, icon: <FaFileContract />, color: 'success', roles: ['admin', 'police'] },
-        { title: 'Filed FIRs', count: stats.totalFiledDocs, icon: <FaCheckCircle />, color: 'info', roles: ['admin', 'police'] },
-        { title: 'Documents Analyzed', count: stats.totalAnalyzed, icon: <FaBalanceScale />, color: 'danger', roles: ['admin', 'police', 'public'] },
-        { title: 'Saved Queries', count: stats.savedQueries, icon: <FaHistory />, color: 'warning', roles: ['admin', 'police', 'public'] },
+        { title: stats.global ? 'Total Platform Searches' : 'Total Searches', count: stats.totalSearches, icon: <FaSearch />, color: 'primary' },
+        { title: stats.global ? 'Global Documents Drafted' : 'Documents Drafted', count: stats.documentsDrafted, icon: <FaFileContract />, color: 'success', roles: ['admin', 'police'] },
+        { title: stats.global ? 'Global Filed FIRs' : 'Filed FIRs', count: stats.totalFiledDocs, icon: <FaCheckCircle />, color: 'info', roles: ['admin', 'police'] },
+        { title: stats.global ? 'Global Documents Analyzed' : 'Documents Analyzed', count: stats.totalAnalyzed, icon: <FaBalanceScale />, color: 'danger' },
+        { title: stats.global ? 'Total Saved Queries' : 'Saved Queries', count: stats.savedQueries, icon: <FaHistory />, color: 'warning' },
     ];
 
-    const filteredStatCards = statCards.filter(card => card.roles.includes(userRole));
+    // Add Total Users card for admins
+    if (stats.global) {
+        statCards.push({ title: 'Total Platform Users', count: stats.totalUsers, icon: <FaUsers />, color: 'secondary' });
+    }
+
+    const filteredStatCards = statCards.filter(card => 
+        !card.roles || card.roles.includes(userRole)
+    );
+
+    const StatCard = ({ title, count, icon, color }) => (
+        <Col>
+            <Card className="h-100 border-0 shadow-sm rounded-4 overflow-hidden">
+                <Card.Body className="p-4">
+                    <div className="d-flex align-items-center mb-3">
+                        <div className={`p-3 rounded-4 bg-${color} bg-opacity-10 text-${color} me-3`}>
+                            {icon}
+                        </div>
+                        <h6 className="text-muted mb-0 fw-bold">{title}</h6>
+                    </div>
+                    <h2 className="mb-0 fw-bold">{count || 0}</h2>
+                </Card.Body>
+            </Card>
+        </Col>
+    );
 
     return (
-        <Container className="py-4">
-            <h2 className="mb-4">Dashboard Overview</h2>
-            <Row className={`g-3 row-cols-1 row-cols-sm-2 row-cols-md-3 ${userRole === 'public' ? 'row-cols-lg-3' : 'row-cols-lg-5'}`}>
-                {filteredStatCards.map((stat, idx) => (
-                    <Col key={idx}>
-                        <Card className={`text-center h-100 border-0 shadow-sm border-top border-4 border-${stat.color}`}>
-                            <Card.Body className="p-3">
-                                <div className={`h3 text-${stat.color} mb-2`}>{stat.icon}</div>
-                                <h6 className="text-muted text-uppercase x-small fw-bold mb-1" style={{fontSize: '0.7rem'}}>{stat.title}</h6>
-                                <p className="h4 fw-bold mb-0">{stat.count}</p>
-                            </Card.Body>
-                        </Card>
-                    </Col>
+        <Container fluid className="py-4 px-4 min-vh-100">
+            {/* Header Section */}
+            <div className={`d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-5 gap-3`}>
+                <div>
+                    <h2 className="fw-bold mb-1">
+                        {stats.global ? 'Global Management Overview' : `Welcome Back, ${user.name}!`}
+                    </h2>
+                    <p className="text-muted mb-0">
+                        {stats.global ? 'Real-time analytics across the entire platform' : 'Here is what is happening with your legal research today.'}
+                    </p>
+                </div>
+                <div className="d-flex gap-2">
+                    <Button 
+                        variant="outline-primary" 
+                        className="rounded-pill px-4 py-2 shadow-sm d-flex align-items-center gap-2"
+                        onClick={() => navigate('/chat')}
+                    >
+                        <FaRobot size={14} /> AI Assistant
+                    </Button>
+                    {userRole !== 'public' && (
+                        <Button 
+                            variant="primary" 
+                            className="rounded-pill px-4 py-2 shadow-sm d-flex align-items-center gap-2"
+                            onClick={() => navigate('/generator')}
+                        >
+                            <FaPen size={14} /> New FIR Draft
+                        </Button>
+                    )}
+                </div>
+            </div>
+
+            {/* Stats Overview */}
+            <Row className={`row-cols-1 row-cols-md-2 row-cols-lg-${stats.global ? 3 : (user.role === 'public' ? 3 : filteredStatCards.length)} g-4 mb-5`}>
+                {filteredStatCards.map((card, idx) => (
+                    <StatCard key={idx} {...card} />
                 ))}
             </Row>
-            
-            <Row className="mt-5">
-                <Col md={8}>
-                    {userRole !== 'public' && (
-                        <Card className="shadow-sm border-0 mb-4">
-                            <Card.Header className="py-3 border-bottom">
-                                <h5 className="mb-0 fw-bold">Recent Activity</h5>
-                            </Card.Header>
-                            <Card.Body className="p-0">
-                                <div style={{ height: '400px', overflowY: 'auto' }}>
-                                    {stats.recentActivity.length > 0 ? (
-                                        <ListGroup variant="flush">
-                                            {stats.recentActivity.map((activity, idx) => (
-                                                <ListGroup.Item key={idx} className="py-3 px-4 bg-transparent border-0 border-bottom">
-                                                    <div className="d-flex justify-content-between align-items-center">
-                                                        <div className="d-flex align-items-center">
-                                                            <div className={`p-2 rounded-circle bg-body-secondary text-${activity.action.includes('Filed') ? 'success' : 'warning'} me-3`}>
-                                                                {activity.action.includes('Filed') ? <FaCheckCircle /> : <FaEdit />}
-                                                            </div>
-                                                            <div>
-                                                                <div className="fw-bold">{activity.action}: {activity.identifier}</div>
-                                                                <small className="text-muted">{activity.description}</small>
-                                                            </div>
-                                                        </div>
-                                                        <small className="text-muted">
-                                                            {new Date(activity.timestamp).toLocaleDateString('en-IN')}
-                                                        </small>
+
+            <Row className="g-4">
+                {/* Left Column: Recent Activity */}
+                {!(userRole === 'public' && !stats.global) && (
+                    <Col lg={8}>
+                        <Card className="border-0 shadow-sm rounded-4 h-100">
+                            <Card.Body className="p-4">
+                                <h5 className="fw-bold mb-4 d-flex align-items-center">
+                                    <span className="p-2 rounded-3 bg-primary bg-opacity-10 text-primary me-3">
+                                        <FaHistory size={18} />
+                                    </span>
+                                    {stats.global ? 'Platform-Wide Activity' : 'Recent Activity'}
+                                </h5>
+                                <div className="activity-timeline" style={{ maxHeight: '450px', overflowY: 'auto', paddingRight: '10px' }}>
+                                    {stats.recentActivity && stats.recentActivity.length > 0 ? (
+                                        stats.recentActivity.map((activity, idx) => (
+                                            <div key={idx} className="d-flex mb-4 last-child-mb-0">
+                                                <div className="me-3 position-relative">
+                                                    <div className="p-2 rounded-circle bg-body text-primary border position-relative z-index-1">
+                                                        {activity.type === 'FIR' ? <FaFileContract size={14} /> : <FaSearch size={14} />}
                                                     </div>
-                                                </ListGroup.Item>
-                                            ))}
-                                        </ListGroup>
+                                                    {idx !== stats.recentActivity.length - 1 && (
+                                                        <div className="position-absolute h-100 border-start border-2 start-50 translate-middle-x top-100" style={{marginTop: '-8px'}}></div>
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <div className="d-flex align-items-center gap-2 mb-1">
+                                                        <span className="fw-bold small">{activity.action}</span>
+                                                        <Badge bg="light" text="dark" className="fw-normal border small">{activity.identifier}</Badge>
+                                                    </div>
+                                                    <p className="text-muted small mb-1">{activity.description}</p>
+                                                    <small className="text-muted" style={{fontSize: '11px'}}>
+                                                        {new Date(activity.timestamp).toLocaleString()}
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        ))
                                     ) : (
                                         <div className="text-center py-5">
-                                            <p className="text-muted">No data to show</p>
+                                            <p className="text-muted mb-0 italic">No recent activity to show.</p>
                                         </div>
                                     )}
                                 </div>
                             </Card.Body>
                         </Card>
-                    )}
+                    </Col>
+                )}
 
-                    {/* Saved Queries Section */}
-                    <Card className="shadow-sm border-0 mt-4">
+                {/* Right Column: Saved Searches (or full width if activity hidden) */}
+                <Col lg={(!stats.global && user.role === 'public') ? 12 : 4}>
+                    <Card className="shadow-sm border-0 rounded-4 h-100">
                         <Card.Header className="py-3 border-bottom d-flex justify-content-between align-items-center">
-                            <h5 className="mb-0 fw-bold">Saved Searches</h5>
-                            <Badge bg="warning" text="dark">{savedQueries.length}</Badge>
+                            <h5 className="mb-0 fw-bold">{stats.global ? 'Platform-Wide Searches' : 'Saved Searches'}</h5>
+                            <Badge bg="warning" text="dark">{stats.global ? (stats.savedQueries || 0) : (savedQueries.length)}</Badge>
                         </Card.Header>
                         <Card.Body className="p-0">
                             <div style={{ height: '400px', overflowY: 'auto' }}>
@@ -194,9 +258,9 @@ const Dashboard = () => {
                                     <div className="text-center py-4">
                                         <Spinner animation="border" size="sm" variant="warning" />
                                     </div>
-                                ) : savedQueries.length > 0 ? (
+                                ) : (stats.global ? stats.recentQueries : savedQueries).length > 0 ? (
                                     <ListGroup variant="flush">
-                                        {savedQueries.map((q) => (
+                                        {(stats.global ? stats.recentQueries : savedQueries).map((q) => (
                                             <ListGroup.Item 
                                                 key={q._id} 
                                                 action 
@@ -209,16 +273,21 @@ const Dashboard = () => {
                                                     </div>
                                                     <div>
                                                         <div className="fw-bold">{q.title}</div>
-                                                        <small className="text-muted">Law: {q.law.toUpperCase()}</small>
+                                                        <small className="text-muted">
+                                                            Law: {q.law.toUpperCase()} 
+                                                            {stats.global && q.user && ` • By ${q.user.name}`}
+                                                        </small>
                                                     </div>
                                                 </div>
-                                                <Button 
-                                                    variant="link" 
-                                                    className="text-danger p-0 border-0"
-                                                    onClick={(e) => handleDeleteQuery(q._id, e)}
-                                                >
-                                                    <FaTrash />
-                                                </Button>
+                                                {!stats.global && (
+                                                    <Button 
+                                                        variant="link" 
+                                                        className="text-danger p-0 border-0"
+                                                        onClick={(e) => handleDeleteQuery(q._id, e)}
+                                                    >
+                                                        <FaTrash />
+                                                    </Button>
+                                                )}
                                             </ListGroup.Item>
                                         ))}
                                     </ListGroup>
@@ -243,22 +312,6 @@ const Dashboard = () => {
                             </div>
                         </Modal.Body>
                     </Modal>
-                </Col>
-                <Col md={4}>
-                    <Card className="shadow-sm border-0 bg-primary text-white h-100">
-                        <Card.Body className="d-flex flex-column justify-content-center text-center">
-                            <FaRobot size={48} className="mb-3 mx-auto" />
-                            <h4>AI Assistant Ready</h4>
-                            <p className="small opacity-75">Need help with legal sections or FIR analysis? Our AI is here to help.</p>
-                            <Button 
-                                variant="light" 
-                                className="mt-3 fw-bold"
-                                onClick={() => navigate('/chat')}
-                            >
-                                Start Chat
-                            </Button>
-                        </Card.Body>
-                    </Card>
                 </Col>
             </Row>
         </Container>

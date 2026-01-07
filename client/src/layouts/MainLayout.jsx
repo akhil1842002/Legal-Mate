@@ -24,10 +24,11 @@ const MainLayout = ({ user, onLogout, theme, setTheme }) => {
         { path: '/generator', name: 'Document Generator', icon: <FaFileAlt />, roles: ['admin', 'police'] },
         { path: '/fir-history', name: 'FIR History', icon: <FaFolder />, roles: ['admin', 'police'] },
         { path: '/saved-queries', name: 'Saved Searches', icon: <FaHistory />, roles: ['admin', 'police', 'public'] },
+        { path: '/admin', name: 'Admin Panel', icon: <FaCog />, adminOnly: true },
     ];
 
     const filteredNavItems = navItems.filter(item => 
-        !item.roles || item.roles.includes(user.role.toLowerCase())
+        (item.adminOnly ? user.isAdmin : (!item.roles || item.roles.includes(user.role.toLowerCase())))
     );
 
     const SidebarContent = ({ isCompact, onToggle }) => (
@@ -49,7 +50,7 @@ const MainLayout = ({ user, onLogout, theme, setTheme }) => {
                         key={item.path} 
                         to={item.path} 
                         className={({ isActive }) => 
-                            `nav-link d-flex align-items-center mb-2 rounded ${isActive ? 'bg-primary text-white' : 'text-body hover-bg-light'} ${isCompact ? 'justify-content-center px-1 py-3' : 'px-3 py-2'}`
+                            `nav-link d-flex align-items-center mb-2 rounded ${isActive ? 'bg-primary text-white' : 'text-body hover-bg-body-secondary'} ${isCompact ? 'justify-content-center px-1 py-3' : 'px-3 py-2'}`
                         }
                         onClick={handleClose}
                         title={isCompact ? item.name : ''}
@@ -103,7 +104,7 @@ const MainLayout = ({ user, onLogout, theme, setTheme }) => {
                                 <Dropdown.Toggle variant="link" id="dropdown-profile" className="text-body p-0 border-0 d-flex align-items-center text-decoration-none">
                                     <div className="d-none d-md-block text-end me-2">
                                         <div className="fw-bold small">{user.name}</div>
-                                        <div className="text-muted small" style={{fontSize: '10px'}}>{user.role.toUpperCase()}</div>
+                                        <div className="text-muted small" style={{fontSize: '10px'}}>{user.isAdmin ? 'ADMIN' : user.role.toUpperCase()}</div>
                                     </div>
                                     <FaUserCircle size={32} className="text-primary"/>
                                 </Dropdown.Toggle>

@@ -26,8 +26,22 @@ const saveQuery = asyncHandler(async (req, res) => {
 // @route   GET /api/queries
 // @access  Private
 const getSavedQueries = asyncHandler(async (req, res) => {
-    const queries = await SavedQuery.find({ user: req.user._id }).sort({ createdAt: -1 });
-    res.json(queries);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const total = await SavedQuery.countDocuments({ user: req.user._id });
+    const queries = await SavedQuery.find({ user: req.user._id })
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
+
+    res.json({
+        queries,
+        page,
+        pages: Math.ceil(total / limit),
+        total
+    });
 });
 
 // @desc    Delete a saved query

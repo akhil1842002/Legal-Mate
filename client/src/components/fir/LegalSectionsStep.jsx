@@ -13,7 +13,12 @@ const LegalSectionsStep = ({ data, updateData }) => {
 
         setSearching(true);
         try {
-            const response = await fetch(`${API_URL}/api/search?law=all&q=${encodeURIComponent(searchTerm)}`);
+            const user = JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user'));
+            const response = await fetch(`${API_URL}/api/search?law=all&q=${encodeURIComponent(searchTerm)}`, {
+                headers: {
+                    'Authorization': user?.token ? `Bearer ${user.token}` : ''
+                }
+            });
             const result = await response.json();
             setSearchResults(result.results || []);
         } catch (error) {

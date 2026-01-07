@@ -12,6 +12,7 @@ import DocumentGenerator from './pages/DocumentGenerator';
 import FIRHistory from './pages/FIRHistory';
 import DocumentAnalysis from './pages/DocumentAnalysis';
 import SavedQueries from './pages/SavedQueries';
+import AdminPanel from './pages/AdminPanel';
 import { DocDrafter, History } from './pages/OtherPages';
 
 function App() {
@@ -83,6 +84,10 @@ function App() {
           <Route path="/saved-queries" element={<SavedQueries />} />
           <Route path="/drafter" element={<DocDrafter />} />
           <Route path="/history" element={<History />} />
+          <Route 
+            path="/admin" 
+            element={user?.isAdmin ? <AdminPanel /> : <Navigate to="/" />} 
+          />
           <Route path="/profile" element={<Profile />} />
           <Route path="/settings" element={<Settings />} />
         </Route>

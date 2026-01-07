@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Form, Button, Card, Spinner, Alert, Row, Col, Container } from 'react-bootstrap';
 import { useSearchParams } from 'react-router-dom';
-import { FaSearch, FaSave, FaRobot } from 'react-icons/fa';
+import { FaSearch, FaSave, FaRobot, FaCheckCircle } from 'react-icons/fa';
 import API_URL from '../config';
 
 const ChatAssistant = () => {
@@ -29,7 +29,12 @@ const ChatAssistant = () => {
                 setResults([]);
                 setError(null);
                 try {
-                    const response = await fetch(`${API_URL}/search?law=${lawParam || law}&q=${encodeURIComponent(qParam)}`);
+                    const user = JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user'));
+                    const response = await fetch(`${API_URL}/search?law=${lawParam || law}&q=${encodeURIComponent(qParam)}`, {
+                        headers: {
+                            'Authorization': user?.token ? `Bearer ${user.token}` : ''
+                        }
+                    });
                     const data = await response.json();
                     if (data.results) {
                         setResults(data.results);
@@ -58,7 +63,12 @@ const ChatAssistant = () => {
         setSaved(false)
 
         try {
-            const response = await fetch(`${API_URL}/search?law=${law}&q=${encodeURIComponent(query)}`)
+            const user = JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user'));
+            const response = await fetch(`${API_URL}/search?law=${law}&q=${encodeURIComponent(query)}`, {
+                headers: {
+                    'Authorization': user?.token ? `Bearer ${user.token}` : ''
+                }
+            })
             const data = await response.json()
             if (data.results) {
                 setResults(data.results)
@@ -77,9 +87,12 @@ const ChatAssistant = () => {
         if (!query || saving) return;
 
         setSaving(true);
-        setSaveMessage(null);
         try {
-            const user = JSON.parse(localStorage.getItem('user'));
+            const user = JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user'));
+            if (!user?.token) {
+                setError('You must be logged in to save queries');
+                return;
+            }
             const response = await fetch(`${API_URL}/api/queries`, {
                 method: 'POST',
                 headers: {

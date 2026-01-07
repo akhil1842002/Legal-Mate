@@ -2,59 +2,89 @@ import asyncHandler from 'express-async-handler';
 import FIR from '../models/FIR.js';
 import SearchLog from '../models/SearchLog.js';
 import SavedQuery from '../models/SavedQuery.js';
+import User from '../models/User.js';
 
 // @desc    Get dashboard statistics
 // @route   GET /api/stats/dashboard
 // @access  Private
 export const getDashboardStats = asyncHandler(async (req, res) => {
+    const isAdmin = req.user.isAdmin;
     const userId = req.user._id;
+    const role = req.user.role?.toLowerCase() || 'public';
+    const isPowerUser = isAdmin || role === 'police';
 
-    // 1. Total Searches
-    const totalSearches = await SearchLog.countDocuments({ user: userId });
+    let totalSearches, documentsDrafted, totalFiledDocs, totalAnalyzed, savedQueries, recentActivity, recentQueries;
 
-    // 2. Documents Drafted (FIRs count as drafts)
-    const documentsDrafted = await FIR.countDocuments({
-        createdBy: userId,
-        status: 'draft'
-    });
+    if (isPowerUser) {
+        // GLOBAL STATS FOR ADMIN
+        totalSearches = await SearchLog.countDocuments({});
+        documentsDrafted = await FIR.countDocuments({ status: 'draft' });
+        totalFiledDocs = await FIR.countDocuments({ status: { $ne: 'draft' } });
+        totalAnalyzed = await SearchLog.countDocuments({ law: 'analysis' });
+        savedQueries = await SavedQuery.countDocuments({});
 
-    // 3. Filed FIRs (for recent activity or another stat)
-    const totalFiledDocs = await FIR.countDocuments({
-        createdBy: userId,
-        status: { $ne: 'draft' }
-    });
+        const platformRecentQueries = await SavedQuery.find({})
+            .populate('user', 'name')
+            .sort({ createdAt: -1 })
+            .limit(5);
 
-    const totalAnalyzed = await SearchLog.countDocuments({
-        user: userId,
-        law: 'analysis'
-    });
+        recentQueries = platformRecentQueries;
 
-    // 5. Saved Queries
-    const savedQueries = await SavedQuery.countDocuments({ user: userId });
+        const totalUsers = await User.countDocuments({});
 
-    // 5. Recent Activity (Latest 5 FIR updates)
-    const recentFIRs = await FIR.find({ createdBy: userId })
-        .sort({ updatedAt: -1 })
-        .limit(5)
-        .select('firNumber status updatedAt complainant incident');
+        const recentFIRs = await FIR.find({})
+            .populate('createdBy', 'name')
+            .sort({ updatedAt: -1 })
+            .limit(5);
 
-    const recentActivity = recentFIRs.map(fir => ({
-        type: 'FIR',
-        action: fir.status === 'draft' ? 'Updated Draft' : 'Filed FIR',
-        identifier: fir.firNumber || 'Draft',
-        description: `${fir.incident?.natureOfOffence || 'New FIR'} - ${fir.complainant?.name || 'Unknown'}`,
-        timestamp: fir.updatedAt
-    }));
+        recentActivity = recentFIRs.map(fir => ({
+            type: 'FIR',
+            action: fir.status === 'draft' ? 'User Updated Draft' : 'User Filed FIR',
+            identifier: fir.firNumber || 'Draft',
+            description: `${fir.incident?.natureOfOffence || 'New FIR'} - ${fir.createdBy?.name || 'Unknown User'}`,
+            timestamp: fir.updatedAt
+        }));
 
-    // Chat sessions and Saved queries are placeholders for now or can be added if models exist
-    // For now returning actual measured stats
-    res.json({
-        totalSearches,
-        documentsDrafted,
-        totalFiledDocs,
-        totalAnalyzed,
-        chatSessions: 0, // Placeholder
-        savedQueries,
-        recentActivity
-    });
+        res.json({
+            totalSearches,
+            documentsDrafted,
+            totalFiledDocs,
+            totalAnalyzed,
+            savedQueries,
+            totalUsers,
+            recentActivity,
+            recentQueries,
+            global: true
+        });
+    } else {
+        // INDIVIDUAL STATS FOR USERS
+        const userId = req.user._id;
+        totalSearches = await SearchLog.countDocuments({ user: userId });
+        documentsDrafted = await FIR.countDocuments({ createdBy: userId, status: 'draft' });
+        totalFiledDocs = await FIR.countDocuments({ createdBy: userId, status: { $ne: 'draft' } });
+        totalAnalyzed = await SearchLog.countDocuments({ user: userId, law: 'analysis' });
+        savedQueries = await SavedQuery.countDocuments({ user: userId });
+
+        const recentFIRs = await FIR.find({ createdBy: userId })
+            .sort({ updatedAt: -1 })
+            .limit(5);
+
+        recentActivity = recentFIRs.map(fir => ({
+            type: 'FIR',
+            action: fir.status === 'draft' ? 'Updated Draft' : 'Filed FIR',
+            identifier: fir.firNumber || 'Draft',
+            description: `${fir.incident?.natureOfOffence || 'New FIR'} - ${fir.complainant?.name || 'Unknown'}`,
+            timestamp: fir.updatedAt
+        }));
+
+        res.json({
+            totalSearches,
+            documentsDrafted,
+            totalFiledDocs,
+            totalAnalyzed,
+            savedQueries,
+            recentActivity,
+            global: false
+        });
+    }
 });

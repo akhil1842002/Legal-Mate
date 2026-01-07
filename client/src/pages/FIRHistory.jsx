@@ -30,7 +30,8 @@ const FIRHistory = () => {
         setLoading(true);
         setError(null);
         try {
-            const user = JSON.parse(localStorage.getItem('user'));
+            const user = JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user'));
+            if (!user?.token) return;
             const token = user.token;
 
             let url = `${API_URL}/api/fir?page=${page}&limit=${pagination.limit}`;
@@ -61,7 +62,8 @@ const FIRHistory = () => {
 
     const viewFIR = async (id) => {
         try {
-            const user = JSON.parse(localStorage.getItem('user'));
+            const user = JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user'));
+            if (!user?.token) return;
             const token = user.token;
 
             const response = await fetch(`${API_URL}/api/fir/${id}`, {
@@ -101,7 +103,8 @@ const FIRHistory = () => {
 
     const confirmDelete = async () => {
         try {
-            const user = JSON.parse(localStorage.getItem('user'));
+            const user = JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user'));
+            if (!user?.token) return;
             const token = user.token;
 
             const response = await fetch(`${API_URL}/api/fir/${deleteId}`, {
