@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Container, Card, Table, Badge, Button, Form, Row, Col, Spinner, Alert, Modal } from 'react-bootstrap';
-import { FaEye, FaEdit, FaTrash, FaFilePdf, FaPlus } from 'react-icons/fa';
+import { Container, Card, Table, Badge, Button, Form, Row, Col, Spinner, Alert, Modal, Nav } from 'react-bootstrap';
+import { FaEye, FaEdit, FaTrash, FaFilePdf, FaPlus, FaUsers, FaUser } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import API_URL from '../config';
 import { generateFIRPDF } from '../utils/firPDFGenerator';
@@ -14,6 +14,7 @@ const FIRHistory = () => {
     const [showModal, setShowModal] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
     const [deleteId, setDeleteId] = useState(null);
+    const [activeTab, setActiveTab] = useState('mine');
     const [pagination, setPagination] = useState({
         totalCount: 0,
         totalPages: 1,
@@ -21,20 +22,25 @@ const FIRHistory = () => {
         limit: 10
     });
     const navigate = useNavigate();
+    
+    const getStoredUser = () => JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user'));
+    const user = getStoredUser();
+    const isAdmin = user?.isAdmin;
 
     useEffect(() => {
-        fetchFIRs(1); // Reset to first page when filter or limit changes
-    }, [filterStatus, pagination.limit]);
+        fetchFIRs(1); // Reset to first page when filter, limit, or tab changes
+    }, [filterStatus, pagination.limit, activeTab]);
 
     const fetchFIRs = async (page = pagination.currentPage) => {
         setLoading(true);
         setError(null);
         try {
-            const user = JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user'));
-            if (!user?.token) return;
-            const token = user.token;
+            const currentUser = getStoredUser();
+            if (!currentUser?.token) return;
+            const token = currentUser.token;
 
-            let url = `${API_URL}/api/fir?page=${page}&limit=${pagination.limit}`;
+            const isGlobal = activeTab === 'global';
+            let url = `${API_URL}/api/fir?page=${page}&limit=${pagination.limit}${isGlobal ? '&global=true' : ''}`;
             if (filterStatus !== 'all') {
                 url += `&status=${filterStatus}`;
             }
@@ -62,9 +68,9 @@ const FIRHistory = () => {
 
     const viewFIR = async (id) => {
         try {
-            const user = JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user'));
-            if (!user?.token) return;
-            const token = user.token;
+            const currentUser = getStoredUser();
+            if (!currentUser?.token) return;
+            const token = currentUser.token;
 
             const response = await fetch(`${API_URL}/api/fir/${id}`, {
                 headers: {
@@ -103,9 +109,9 @@ const FIRHistory = () => {
 
     const confirmDelete = async () => {
         try {
-            const user = JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user'));
-            if (!user?.token) return;
-            const token = user.token;
+            const currentUser = getStoredUser();
+            if (!currentUser?.token) return;
+            const token = currentUser.token;
 
             const response = await fetch(`${API_URL}/api/fir/${deleteId}`, {
                 method: 'DELETE',
@@ -143,11 +149,26 @@ const FIRHistory = () => {
         <Container className="py-4">
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <h2>FIR History</h2>
-                <Button variant="primary" onClick={() => navigate('/generator')}>
+                <Button variant="primary" className="rounded-pill px-4 shadow-sm" onClick={() => navigate('/generator')}>
                     <FaPlus className="me-2" />
                     Create New FIR
                 </Button>
             </div>
+
+            {isAdmin && (
+                <Nav variant="pills" className="mb-4 bg-body-tertiary p-1 rounded-pill w-fit-content mx-auto shadow-sm" activeKey={activeTab} onSelect={(k) => { setActiveTab(k); }}>
+                    <Nav.Item>
+                        <Nav.Link eventKey="mine" className="rounded-pill px-4 py-2 border-0">
+                            <FaUser className="me-2" /> My FIRs
+                        </Nav.Link>
+                    </Nav.Item>
+                    <Nav.Item>
+                        <Nav.Link eventKey="global" className="rounded-pill px-4 py-2 border-0">
+                            <FaUsers className="me-2" /> Global Platform
+                        </Nav.Link>
+                    </Nav.Item>
+                </Nav>
+            )}
 
             {/* Filters */}
             <Card className="mb-4">
@@ -221,6 +242,7 @@ const FIRHistory = () => {
                                     <th>Complainant</th>
                                     <th>Offence</th>
                                     <th>Date</th>
+                                    {activeTab === 'global' && <th>Created By</th>}
                                     <th>Status</th>
                                     <th>Actions</th>
                                 </tr>
@@ -237,6 +259,17 @@ const FIRHistory = () => {
                                         <td>{fir.complainant?.name || '---'}</td>
                                         <td>{fir.incident?.natureOfOffence || '---'}</td>
                                         <td>{fir.registrationDate ? new Date(fir.registrationDate).toLocaleDateString('en-IN') : '---'}</td>
+                                        {activeTab === 'global' && (
+                                            <td>
+                                                <div className="d-flex align-items-center">
+                                                    <FaUser size={12} className="me-2 text-muted" />
+                                                    <div className="small">
+                                                        {fir.createdBy?.name || 'System'}
+                                                        {fir.createdBy?._id === user._id && <Badge bg="secondary" className="ms-1" style={{fontSize: '9px'}}>You</Badge>}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        )}
                                         <td>{getStatusBadge(fir.status)}</td>
                                         <td>
                                             <div className="d-flex gap-2">
@@ -248,7 +281,7 @@ const FIRHistory = () => {
                                                 >
                                                     <FaEye />
                                                 </Button>
-                                                {fir.status === 'draft' && (
+                                                {(fir.status === 'draft' && (fir.createdBy?._id === user._id || isAdmin)) && (
                                                     <Button
                                                         variant="outline-warning"
                                                         size="sm"
@@ -266,7 +299,7 @@ const FIRHistory = () => {
                                                 >
                                                     <FaFilePdf />
                                                 </Button>
-                                                {fir.status === 'draft' && (
+                                                {(fir.status === 'draft' && (fir.createdBy?._id === user._id || isAdmin)) && (
                                                     <Button
                                                         variant="outline-danger"
                                                         size="sm"
@@ -333,7 +366,7 @@ const FIRHistory = () => {
                             <Button
                                 variant="outline-primary"
                                 size="sm"
-                                disabled={pagination.currentPage === pagination.totalPages}
+                                disabled={pagination.currentPage === pagination.totalPages || pagination.totalPages === 0}
                                 onClick={() => fetchFIRs(pagination.currentPage + 1)}
                             >
                                 Next
@@ -346,7 +379,7 @@ const FIRHistory = () => {
             {/* View Modal */}
             <Modal show={showModal} onHide={() => setShowModal(false)} size="lg">
                 <Modal.Header closeButton>
-                    <Modal.Title>FIR Details - {selectedFIR?.firNumber}</Modal.Title>
+                    <Modal.Title>FIR Details - {selectedFIR?.firNumber || 'Draft'}</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
                     {selectedFIR && (
@@ -357,6 +390,9 @@ const FIRHistory = () => {
                                 <Col md={6}><strong>Status:</strong> {getStatusBadge(selectedFIR.status)}</Col>
                                 <Col md={6}><strong>Police Station:</strong> {selectedFIR.policeStation?.name || '---'}</Col>
                                 <Col md={6}><strong>District:</strong> {selectedFIR.policeStation?.district || '---'}</Col>
+                                {activeTab === 'global' && (
+                                    <Col md={6} className="mt-1"><strong>Created By:</strong> {selectedFIR.createdBy?.name || '---'} ({selectedFIR.createdBy?.email || '---'})</Col>
+                                )}
                                 {selectedFIR.status === 'draft' && (
                                     <Col md={12} className="mt-2">
                                         <strong>Completion:</strong> {selectedFIR.completionPercentage || 0}%
@@ -420,16 +456,22 @@ const FIRHistory = () => {
 
             {/* Delete Confirmation Modal */}
             <Modal show={showConfirm} onHide={() => setShowConfirm(false)} centered size="sm">
-                <Modal.Body className="text-center py-4">
-                    <FaTrash size={48} className="text-danger mb-3 opacity-50" />
-                    <h5 className="mb-3">Delete FIR Draft?</h5>
-                    <p className="text-muted small mb-4">Are you sure you want to remove this FIR record? This action cannot be undone.</p>
+                <Modal.Body className="text-center py-4 rounded-4 shadow-lg border-0">
+                    <div className="text-danger mb-3 bg-danger bg-opacity-10 p-4 rounded-circle d-inline-block mx-auto">
+                        <FaTrash size={48} />
+                    </div>
+                    <h5 className="fw-bold mb-3">Delete FIR Draft?</h5>
+                    <p className="text-muted small mb-4 px-3">Are you sure you want to remove this FIR record? This action cannot be undone.</p>
                     <div className="d-flex gap-2 justify-content-center">
-                        <Button variant="light" onClick={() => setShowConfirm(false)}>Cancel</Button>
-                        <Button variant="danger" onClick={confirmDelete}>Delete</Button>
+                        <Button variant="light" className="rounded-pill px-4" onClick={() => setShowConfirm(false)}>Cancel</Button>
+                        <Button variant="danger" className="rounded-pill px-4" onClick={confirmDelete}>Delete</Button>
                     </div>
                 </Modal.Body>
             </Modal>
+
+            <style>{`
+                .w-fit-content { width: fit-content; }
+            `}</style>
         </Container>
     );
 };

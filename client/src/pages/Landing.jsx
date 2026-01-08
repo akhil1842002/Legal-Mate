@@ -29,7 +29,7 @@ const Landing = () => {
             <Navbar expand="lg" className="glass-nav fixed-top py-3">
                 <Container>
                     <Navbar.Brand as={Link} to="/" className="fw-bold text-primary fs-3">
-                        Legal <span className="text-accent">Mate</span>
+                        Law <span className="text-accent">Mate</span>
                     </Navbar.Brand>
                     <Navbar.Toggle aria-controls="basic-navbar-nav" />
                     <Navbar.Collapse id="basic-navbar-nav">
@@ -241,7 +241,7 @@ const Landing = () => {
                         </Col>
                         <Col lg={4} md={4}>
                             <h6 className="fw-bold text-white text-uppercase mb-4">Contact</h6>
-                            <p className="text-light opacity-75 mb-1">Email: info@legalmate.ai</p>
+                            <p className="text-light opacity-75 mb-1">Email: info@lawmate.ai</p>
                             <p className="text-light opacity-75">Phone: +91 000 000 0000</p>
                         </Col>
                     </Row>

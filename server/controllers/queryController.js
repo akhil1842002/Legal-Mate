@@ -22,16 +22,25 @@ const saveQuery = asyncHandler(async (req, res) => {
     res.status(201).json(savedQuery);
 });
 
-// @desc    Get all saved queries for a user
+// @desc    Get all saved queries for a user (or all if admin)
 // @route   GET /api/queries
 // @access  Private
 const getSavedQueries = asyncHandler(async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
+    const global = req.query.global === 'true';
 
-    const total = await SavedQuery.countDocuments({ user: req.user._id });
-    const queries = await SavedQuery.find({ user: req.user._id })
+    let query = { user: req.user._id };
+
+    // Admins can see all queries if global param is set
+    if (global && req.user.isAdmin) {
+        query = {};
+    }
+
+    const total = await SavedQuery.countDocuments(query);
+    const queries = await SavedQuery.find(query)
+        .populate('user', 'name email')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit);
@@ -55,7 +64,7 @@ const deleteQuery = asyncHandler(async (req, res) => {
         throw new Error('Query not found');
     }
 
-    if (query.user.toString() !== req.user._id.toString()) {
+    if (!req.user.isAdmin && query.user.toString() !== req.user._id.toString()) {
         res.status(401);
         throw new Error('Not authorized');
     }

@@ -22,9 +22,11 @@ export const getFIRs = asyncHandler(async (req, res) => {
 
     let query = {};
 
-    // Police/Standard users can only see their own FIRs unless admin
-    if (req.user.role === 'admin') {
-        // Admin can see everything if they specify a police station or other filters
+    // Police/Standard users can only see their own FIRs unless admin specifies global
+    const isGlobal = req.query.global === 'true';
+
+    if (req.user.isAdmin && isGlobal) {
+        // Admin can see everything
     } else {
         query.createdBy = req.user._id;
     }
@@ -94,7 +96,7 @@ export const updateFIR = asyncHandler(async (req, res) => {
     }
 
     // Check authorization
-    if (fir.createdBy.toString() !== req.user._id.toString()) {
+    if (!req.user.isAdmin && fir.createdBy.toString() !== req.user._id.toString()) {
         res.status(403);
         throw new Error('Not authorized to update this FIR');
     }
@@ -126,7 +128,7 @@ export const deleteFIR = asyncHandler(async (req, res) => {
     }
 
     // Check authorization
-    if (fir.createdBy.toString() !== req.user._id.toString()) {
+    if (!req.user.isAdmin && fir.createdBy.toString() !== req.user._id.toString()) {
         res.status(403);
         throw new Error('Not authorized to delete this FIR');
     }

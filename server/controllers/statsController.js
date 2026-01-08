@@ -26,7 +26,7 @@ export const getDashboardStats = asyncHandler(async (req, res) => {
         const platformRecentQueries = await SavedQuery.find({})
             .populate('user', 'name')
             .sort({ createdAt: -1 })
-            .limit(5);
+            .limit(10);
 
         recentQueries = platformRecentQueries;
 
@@ -35,7 +35,7 @@ export const getDashboardStats = asyncHandler(async (req, res) => {
         const recentFIRs = await FIR.find({})
             .populate('createdBy', 'name')
             .sort({ updatedAt: -1 })
-            .limit(5);
+            .limit(10);
 
         recentActivity = recentFIRs.map(fir => ({
             type: 'FIR',

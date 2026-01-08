@@ -95,73 +95,56 @@ const AdminPanel = () => {
         fetchData(activeTab);
     }, [activeTab, userPage, userLimit, firPage, firLimit, lawPage, lawLimit]);
 
-    const PaginationControls = ({ currentPage, totalPages, totalItems, onPageChange, limit, onLimitChange }) => {
-        if (totalPages <= 1 && totalItems <= 5) return null;
-
+    const PaginationControls = ({ currentPage, totalPages, totalItems, onPageChange, limit }) => {
         return (
-            <div className="d-flex flex-column flex-md-row justify-content-between align-items-center mt-4 gap-3">
+            <div className="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
                 <div className="text-muted small">
-                    Showing <strong>{totalItems > 0 ? (currentPage - 1) * limit + 1 : 0}</strong> to <strong>{Math.min(currentPage * limit, totalItems)}</strong> of <strong>{totalItems}</strong> items
+                    Showing page <strong>{currentPage}</strong> of <strong>{totalPages}</strong> (<strong>{totalItems}</strong> total items)
                 </div>
                 
-                <div className="d-flex align-items-center gap-3">
-                    <div className="d-flex align-items-center gap-2">
-                        <span className="small text-muted">Rows:</span>
-                        <Form.Select 
-                            size="sm" 
-                            className="w-auto border-0 bg-light rounded-pill px-3"
-                            value={limit}
-                            onChange={(e) => onLimitChange(Number(e.target.value))}
-                        >
-                            {[5, 10, 25, 50].map(l => <option key={l} value={l}>{l}</option>)}
-                        </Form.Select>
-                    </div>
-
-                    <div className="d-flex gap-1">
+                {totalPages > 1 && (
+                    <div className="d-flex gap-2">
                         <Button 
-                            variant="light" 
+                            variant="outline-primary" 
                             size="sm" 
                             disabled={currentPage === 1}
                             onClick={() => onPageChange(currentPage - 1)}
-                            className="rounded-circle"
                         >
-                            &laquo;
+                            Previous
                         </Button>
                         
-                        {[...Array(totalPages)].map((_, i) => {
-                            const p = i + 1;
-                            // Basic ellipsis logic
-                            if (totalPages > 5) {
-                                if (p !== 1 && p !== totalPages && Math.abs(p - currentPage) > 1) {
-                                    if (p === 2 || p === totalPages - 1) return <span key={p} className="mx-1 text-muted">...</span>;
-                                    return null;
+                        {(() => {
+                            const pages = [];
+                            const delta = 1;
+                            for (let i = 1; i <= totalPages; i++) {
+                                if (i === 1 || i === totalPages || (i >= currentPage - delta && i <= currentPage + delta)) {
+                                    pages.push(
+                                        <Button
+                                            key={i}
+                                            variant={currentPage === i ? 'primary' : 'outline-primary'}
+                                            size="sm"
+                                            onClick={() => onPageChange(i)}
+                                        >
+                                            {i}
+                                        </Button>
+                                    );
+                                } else if ((i === 2 && currentPage > delta + 2) || (i === totalPages - 1 && currentPage < totalPages - delta - 1)) {
+                                    pages.push(<span key={i} className="px-1 text-muted">...</span>);
                                 }
                             }
-
-                            return (
-                                <Button 
-                                    key={p}
-                                    variant={currentPage === p ? 'primary' : 'light'} 
-                                    size="sm"
-                                    onClick={() => onPageChange(p)}
-                                    className="rounded-pill px-3"
-                                >
-                                    {p}
-                                </Button>
-                            );
-                        })}
+                            return pages;
+                        })()}
 
                         <Button 
-                            variant="light" 
+                            variant="outline-primary" 
                             size="sm" 
                             disabled={currentPage === totalPages}
                             onClick={() => onPageChange(currentPage + 1)}
-                            className="rounded-circle"
                         >
-                            &raquo;
+                            Next
                         </Button>
                     </div>
-                </div>
+                )}
             </div>
         );
     };
@@ -324,175 +307,229 @@ const AdminPanel = () => {
                     <Card.Body>
                         <Tab.Content>
                             <Tab.Pane eventKey="users">
-                                <div className="d-flex justify-content-between align-items-center mb-4">
+                                <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
                                     <h5 className="fw-bold mb-0">User Management</h5>
-                                    <Button variant="outline-primary" size="sm" className="rounded-pill px-3" onClick={() => fetchData('users')}>
-                                        Refresh List
-                                    </Button>
+                                    <div className="d-flex align-items-center gap-3">
+                                        <Form.Group className="d-flex align-items-center gap-2">
+                                            <Form.Label className="small mb-0 text-nowrap">Items per page:</Form.Label>
+                                            <Form.Select 
+                                                size="sm" 
+                                                className="w-auto"
+                                                value={userLimit}
+                                                onChange={(e) => { setUserLimit(Number(e.target.value)); setUserPage(1); }}
+                                            >
+                                                {[5, 10, 25, 50].map(l => <option key={l} value={l}>{l}</option>)}
+                                            </Form.Select>
+                                        </Form.Group>
+                                        <Button variant="outline-primary" size="sm" className="rounded-pill px-3" onClick={() => fetchData('users')}>
+                                            Refresh List
+                                        </Button>
+                                    </div>
                                 </div>
                                 {loading ? (
                                     <div className="text-center py-5"><Spinner animation="border" /></div>
                                 ) : (
-                                    <div className="table-responsive border rounded-3 overflow-hidden">
-                                        <Table hover className="align-middle mb-0 custom-admin-table">
-                                            <thead className="bg-body-tertiary">
-                                                <tr>
-                                                    <th className="px-4 py-3 border-0">Name</th>
-                                                    <th className="py-3 border-0">Email</th>
-                                                    <th className="py-3 border-0">Role</th>
-                                                    <th className="py-3 border-0">Joined</th>
-                                                    <th className="text-end px-4 py-3 border-0">Actions</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {users.map(u => (
-                                                    <tr key={u._id}>
-                                                        <td className="px-4 py-3 fw-medium">{u.name}</td>
-                                                        <td className="py-3 text-muted">{u.email}</td>
-                                                        <td className="py-3">
-                                                            <Badge pill bg={u.role === 'admin' ? 'danger' : 'info'} className="text-uppercase" style={{ fontSize: '0.7rem' }}>
-                                                                {u.role}
-                                                            </Badge>
-                                                        </td>
-                                                        <td className="py-3 text-muted">{new Date(u.createdAt).toLocaleDateString()}</td>
-                                                        <td className="text-end px-4 py-3">
-                                                            <Button 
-                                                                variant="light" 
-                                                                className={`btn-sm rounded-circle text-danger ${u.role === 'admin' ? 'opacity-0' : ''}`}
-                                                                onClick={() => confirmDeleteUser(u)}
-                                                                disabled={u.role === 'admin'}
-                                                            >
-                                                                 <FaTrash />
-                                                            </Button>
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </Table>
-                                    </div>
+                                    <Card className="border-0 shadow-sm rounded-3">
+                                        <Card.Body className="p-0">
+                                            <div className="table-responsive">
+                                                <Table hover className="align-middle mb-0 custom-admin-table">
+                                                    <thead className="bg-body-tertiary">
+                                                        <tr>
+                                                            <th className="px-4 py-3 border-0">Name</th>
+                                                            <th className="py-3 border-0">Email</th>
+                                                            <th className="py-3 border-0">Role</th>
+                                                            <th className="py-3 border-0">Joined</th>
+                                                            <th className="text-end px-4 py-3 border-0">Actions</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {users.map(u => (
+                                                            <tr key={u._id}>
+                                                                <td className="px-4 py-3 fw-medium">{u.name}</td>
+                                                                <td className="py-3 text-muted">{u.email}</td>
+                                                                <td className="py-3">
+                                                                    <Badge pill bg={u.role === 'admin' ? 'danger' : 'info'} className="text-uppercase" style={{ fontSize: '0.7rem' }}>
+                                                                        {u.role}
+                                                                    </Badge>
+                                                                </td>
+                                                                <td className="py-3 text-muted">{new Date(u.createdAt).toLocaleDateString()}</td>
+                                                                <td className="text-end px-4 py-3">
+                                                                    <Button 
+                                                                        variant="light" 
+                                                                        className={`btn-sm rounded-circle text-danger ${u.role === 'admin' ? 'opacity-0' : ''}`}
+                                                                        onClick={() => confirmDeleteUser(u)}
+                                                                        disabled={u.role === 'admin'}
+                                                                    >
+                                                                         <FaTrash />
+                                                                    </Button>
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </Table>
+                                            </div>
+                                        </Card.Body>
+                                        <Card.Footer className="bg-white py-3">
+                                            <PaginationControls 
+                                                currentPage={userPage}
+                                                totalPages={userTotalPages}
+                                                totalItems={userTotal}
+                                                limit={userLimit}
+                                                onPageChange={setUserPage}
+                                            />
+                                        </Card.Footer>
+                                    </Card>
                                 )}
-                                <PaginationControls 
-                                    currentPage={userPage}
-                                    totalPages={userTotalPages}
-                                    totalItems={userTotal}
-                                    limit={userLimit}
-                                    onPageChange={setUserPage}
-                                    onLimitChange={(l) => { setUserLimit(l); setUserPage(1); }}
-                                />
                             </Tab.Pane>
 
                             <Tab.Pane eventKey="firs">
-                                <div className="d-flex justify-content-between align-items-center mb-4">
+                                <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
                                     <h5 className="fw-bold mb-0">Global FIR Oversight</h5>
-                                    <Button variant="outline-primary" size="sm" className="rounded-pill px-3" onClick={() => fetchData('firs')}>
-                                        Refresh Tracking
-                                    </Button>
+                                    <div className="d-flex align-items-center gap-3">
+                                        <Form.Group className="d-flex align-items-center gap-2">
+                                            <Form.Label className="small mb-0 text-nowrap">Items per page:</Form.Label>
+                                            <Form.Select 
+                                                size="sm" 
+                                                className="w-auto"
+                                                value={firLimit}
+                                                onChange={(e) => { setFirLimit(Number(e.target.value)); setFirPage(1); }}
+                                            >
+                                                {[5, 10, 25, 50].map(l => <option key={l} value={l}>{l}</option>)}
+                                            </Form.Select>
+                                        </Form.Group>
+                                        <Button variant="outline-primary" size="sm" className="rounded-pill px-3" onClick={() => fetchData('firs')}>
+                                            Refresh Tracking
+                                        </Button>
+                                    </div>
                                 </div>
                                 {loading ? (
                                     <div className="text-center py-5"><Spinner animation="border" /></div>
                                 ) : (
-                                    <div className="table-responsive border rounded-3 overflow-hidden">
-                                        <Table hover className="align-middle mb-0 custom-admin-table">
-                                            <thead className="bg-body-tertiary">
-                                                <tr>
-                                                    <th className="px-4 py-3 border-0">FIR # / Draft</th>
-                                                    <th className="py-3 border-0">Created By</th>
-                                                    <th className="py-3 border-0">Offence Nature</th>
-                                                    <th className="py-3 border-0 text-center">Status</th>
-                                                    <th className="px-4 py-3 border-0 text-end">Date</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {firs.map(f => (
-                                                    <tr key={f._id}>
-                                                        <td className="px-4 py-3 fw-bold text-primary">{f.firNumber || 'DRAFT'}</td>
-                                                        <td className="py-3">
-                                                            <span className="fw-medium">{f.createdBy?.name || 'Unknown'}</span>
-                                                            <small className="text-muted d-block" style={{ fontSize: '0.75rem' }}>{f.createdBy?.email}</small>
-                                                        </td>
-                                                        <td className="py-3 text-muted">{f.incident?.natureOfOffence || 'Not specified'}</td>
-                                                        <td className="py-3 text-center">
-                                                            <Badge pill bg={f.status === 'filed' ? 'success' : 'warning'} style={{ minWidth: '80px', fontSize: '0.7rem' }}>
-                                                                {f.status.toUpperCase()}
-                                                            </Badge>
-                                                        </td>
-                                                        <td className="px-4 py-3 text-end text-muted font-monospace">{new Date(f.createdAt).toLocaleDateString()}</td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </Table>
-                                    </div>
+                                    <Card className="border-0 shadow-sm rounded-3">
+                                        <Card.Body className="p-0">
+                                            <div className="table-responsive">
+                                                <Table hover className="align-middle mb-0 custom-admin-table">
+                                                    <thead className="bg-body-tertiary">
+                                                        <tr>
+                                                            <th className="px-4 py-3 border-0">FIR # / Draft</th>
+                                                            <th className="py-3 border-0">Created By</th>
+                                                            <th className="py-3 border-0">Offence Nature</th>
+                                                            <th className="py-3 border-0 text-center">Status</th>
+                                                            <th className="px-4 py-3 border-0 text-end">Date</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {firs.map(f => (
+                                                            <tr key={f._id}>
+                                                                <td className="px-4 py-3 fw-bold text-primary">{f.firNumber || 'DRAFT'}</td>
+                                                                <td className="py-3">
+                                                                    <span className="fw-medium">{f.createdBy?.name || 'Unknown'}</span>
+                                                                    <small className="text-muted d-block" style={{ fontSize: '0.75rem' }}>{f.createdBy?.email}</small>
+                                                                </td>
+                                                                <td className="py-3 text-muted">{f.incident?.natureOfOffence || 'Not specified'}</td>
+                                                                <td className="py-3 text-center">
+                                                                    <Badge pill bg={f.status === 'filed' ? 'success' : 'warning'} style={{ minWidth: '80px', fontSize: '0.7rem' }}>
+                                                                        {f.status.toUpperCase()}
+                                                                    </Badge>
+                                                                </td>
+                                                                <td className="px-4 py-3 text-end text-muted font-monospace">{new Date(f.createdAt).toLocaleDateString()}</td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </Table>
+                                            </div>
+                                        </Card.Body>
+                                        <Card.Footer className="bg-white py-3">
+                                            <PaginationControls 
+                                                currentPage={firPage}
+                                                totalPages={firTotalPages}
+                                                totalItems={firTotal}
+                                                limit={firLimit}
+                                                onPageChange={setFirPage}
+                                            />
+                                        </Card.Footer>
+                                    </Card>
                                 )}
-                                <PaginationControls 
-                                    currentPage={firPage}
-                                    totalPages={firTotalPages}
-                                    totalItems={firTotal}
-                                    limit={firLimit}
-                                    onPageChange={setFirPage}
-                                    onLimitChange={(l) => { setFirLimit(l); setFirPage(1); }}
-                                />
                             </Tab.Pane>
 
                              <Tab.Pane eventKey="laws">
-                                 <div className="d-flex justify-content-between align-items-center mb-4">
+                                 <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
                                      <h5 className="fw-bold mb-0">Legal Knowledge Base</h5>
-                                     <Button variant="primary" size="sm" className="rounded-pill px-4 shadow-sm" onClick={() => openLawModal()}>
-                                         <FaPlus className="me-2" /> Add New Section
-                                     </Button>
+                                     <div className="d-flex align-items-center gap-3">
+                                         <Form.Group className="d-flex align-items-center gap-2">
+                                             <Form.Label className="small mb-0 text-nowrap">Items per page:</Form.Label>
+                                             <Form.Select 
+                                                 size="sm" 
+                                                 className="w-auto"
+                                                 value={lawLimit}
+                                                 onChange={(e) => { setLawLimit(Number(e.target.value)); setLawPage(1); }}
+                                             >
+                                                 {[5, 10, 25, 50].map(l => <option key={l} value={l}>{l}</option>)}
+                                             </Form.Select>
+                                         </Form.Group>
+                                         <Button variant="primary" size="sm" className="rounded-pill px-4 shadow-sm" onClick={() => openLawModal()}>
+                                             <FaPlus className="me-2" /> Add New Section
+                                         </Button>
+                                     </div>
                                  </div>
                                  {loading && activeTab === 'laws' ? (
                                      <div className="text-center py-5"><Spinner animation="border" /></div>
                                  ) : (
-                                     <div className="table-responsive border rounded-3 overflow-hidden">
-                                         <Table hover className="align-middle mb-0 custom-admin-table">
-                                             <thead className="bg-body-tertiary">
-                                                 <tr>
-                                                     <th className="px-4 py-3 border-0">Law</th>
-                                                     <th className="py-3 border-0">Section</th>
-                                                     <th className="py-3 border-0">Title</th>
-                                                     <th className="py-3 border-0">Type</th>
-                                                     <th className="text-end px-4 py-3 border-0">Actions</th>
-                                                 </tr>
-                                             </thead>
-                                             <tbody>
-                                                 {laws.map(l => (
-                                                     <tr key={l._id}>
-                                                         <td className="px-4 py-3"><Badge bg="secondary" className="px-2">{l.law}</Badge></td>
-                                                         <td className="py-3 fw-bold">Section {l.section}</td>
-                                                         <td className="py-3 text-muted" title={l.title}>{l.title.length > 50 ? l.title.substring(0, 50) + '...' : l.title}</td>
-                                                         <td className="py-3 small">{l.offenseType}</td>
-                                                         <td className="text-end px-4 py-3">
-                                                             <div className="d-flex gap-2 justify-content-end">
-                                                                 <Button 
-                                                                     variant="light" 
-                                                                     className="btn-sm rounded-circle text-primary"
-                                                                     onClick={() => openLawModal(l)}
-                                                                 >
-                                                                     <FaEdit />
-                                                                 </Button>
-                                                                 <Button 
-                                                                     variant="light" 
-                                                                     className="btn-sm rounded-circle text-danger"
-                                                                     onClick={() => confirmDeleteLaw(l)}
-                                                                 >
-                                                                     <FaTrash />
-                                                                 </Button>
-                                                             </div>
-                                                         </td>
-                                                     </tr>
-                                                 ))}
-                                             </tbody>
-                                         </Table>
-                                     </div>
+                                     <Card className="border-0 shadow-sm rounded-3">
+                                         <Card.Body className="p-0">
+                                             <div className="table-responsive">
+                                                 <Table hover className="align-middle mb-0 custom-admin-table">
+                                                     <thead className="bg-body-tertiary">
+                                                         <tr>
+                                                             <th className="px-4 py-3 border-0">Law</th>
+                                                             <th className="py-3 border-0">Section</th>
+                                                             <th className="py-3 border-0">Title</th>
+                                                             <th className="py-3 border-0">Type</th>
+                                                             <th className="text-end px-4 py-3 border-0">Actions</th>
+                                                         </tr>
+                                                     </thead>
+                                                     <tbody>
+                                                         {laws.map(l => (
+                                                             <tr key={l._id}>
+                                                                 <td className="px-4 py-3"><Badge bg="secondary" className="px-2">{l.law}</Badge></td>
+                                                                 <td className="py-3 fw-bold">Section {l.section}</td>
+                                                                 <td className="py-3 text-muted" title={l.title}>{l.title.length > 50 ? l.title.substring(0, 50) + '...' : l.title}</td>
+                                                                 <td className="py-3 small">{l.offenseType}</td>
+                                                                 <td className="text-end px-4 py-3">
+                                                                     <div className="d-flex gap-2 justify-content-end">
+                                                                         <Button 
+                                                                             variant="light" 
+                                                                             className="btn-sm rounded-circle text-primary"
+                                                                             onClick={() => openLawModal(l)}
+                                                                         >
+                                                                             <FaEdit />
+                                                                         </Button>
+                                                                         <Button 
+                                                                             variant="light" 
+                                                                             className="btn-sm rounded-circle text-danger"
+                                                                             onClick={() => confirmDeleteLaw(l)}
+                                                                         >
+                                                                             <FaTrash />
+                                                                         </Button>
+                                                                     </div>
+                                                                 </td>
+                                                             </tr>
+                                                         ))}
+                                                     </tbody>
+                                                 </Table>
+                                             </div>
+                                         </Card.Body>
+                                         <Card.Footer className="bg-white py-3">
+                                             <PaginationControls 
+                                                 currentPage={lawPage}
+                                                 totalPages={lawTotalPages}
+                                                 totalItems={lawTotal}
+                                                 limit={lawLimit}
+                                                 onPageChange={setLawPage}
+                                             />
+                                         </Card.Footer>
+                                     </Card>
                                  )}
-                                 <PaginationControls 
-                                     currentPage={lawPage}
-                                     totalPages={lawTotalPages}
-                                     totalItems={lawTotal}
-                                     limit={lawLimit}
-                                     onPageChange={setLawPage}
-                                     onLimitChange={(l) => { setLawLimit(l); setLawPage(1); }}
-                                 />
                              </Tab.Pane>
                         </Tab.Content>
                     </Card.Body>
