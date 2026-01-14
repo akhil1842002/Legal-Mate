@@ -28,7 +28,7 @@ const MainLayout = ({ user, onLogout, theme, setTheme }) => {
     ];
 
     const filteredNavItems = navItems.filter(item => 
-        (item.adminOnly ? user.isAdmin : (!item.roles || item.roles.includes(user.role.toLowerCase())))
+        (item.adminOnly ? user?.isAdmin : (!item.roles || item.roles.includes(user?.role?.toLowerCase() || 'public')))
     );
 
     const SidebarContent = ({ isCompact, onToggle }) => (
@@ -103,14 +103,14 @@ const MainLayout = ({ user, onLogout, theme, setTheme }) => {
                             <Dropdown className="ms-auto" align="end">
                                 <Dropdown.Toggle variant="link" id="dropdown-profile" className="text-body p-0 border-0 d-flex align-items-center text-decoration-none">
                                     <div className="d-none d-md-block text-end me-2">
-                                        <div className="fw-bold small">{user.name}</div>
-                                        <div className="text-muted small" style={{fontSize: '10px'}}>{user.isAdmin ? 'ADMIN' : user.role.toUpperCase()}</div>
+                                        <div className="fw-bold small">{user?.name || 'User'}</div>
+                                        <div className="text-muted small" style={{fontSize: '10px'}}>{user?.isAdmin ? 'ADMIN' : (user?.role?.toUpperCase() || 'PUBLIC')}</div>
                                     </div>
                                     <FaUserCircle size={32} className="text-primary"/>
                                 </Dropdown.Toggle>
 
                                 <Dropdown.Menu>
-                                    <Dropdown.Header className="d-md-none">Signed in as <strong>{user.name}</strong></Dropdown.Header>
+                                    <Dropdown.Header className="d-md-none">Signed in as <strong>{user?.name || 'User'}</strong></Dropdown.Header>
                                     <Dropdown.Item as={NavLink} to="/profile"><FaUser className="me-2"/> My Profile</Dropdown.Item>
                                     <Dropdown.Item as={NavLink} to="/settings"><FaCog className="me-2"/> Settings</Dropdown.Item>
                                     <Dropdown.Divider />
